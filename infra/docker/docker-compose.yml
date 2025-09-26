@@ -19,8 +19,14 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"   # S3 API
       - "9001:9001"   # Web console
+  minio-proxy:
+    image: nginx:1.27-alpine
+    depends_on: [ minio ]
+    ports:
+      - "9000:9000"   # public S3 endpoint for your team
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -46,7 +52,7 @@ services:
       MINIO_PRESIGN_TTL: 300
 
     ports: [ "8001:8080" ]
-    depends_on: [ postgres, minio ]
+    depends_on: [ postgres, minio, minio-proxy ]
 
   verification-service:
     build: ../../services/verification-service

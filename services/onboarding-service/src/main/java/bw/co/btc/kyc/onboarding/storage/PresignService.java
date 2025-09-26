@@ -3,7 +3,6 @@ package bw.co.btc.kyc.onboarding.storage;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,20 +12,20 @@ import java.util.Map;
 @Service
 public class PresignService {
 
-    private final MinioClient presignMinio;   // public host client
+    private final MinioClient minio;   // single internal client
     private final String bucket;
     private final int ttlSeconds;
 
-    public PresignService(@Qualifier("minioPublic") MinioClient presignMinio,
+    public PresignService(MinioClient minio,
                           @Value("${minio.bucket}") String bucket,
                           @Value("${minio.presignTtlSeconds}") int ttlSeconds) {
-        this.presignMinio = presignMinio;
+        this.minio = minio;
         this.bucket = bucket;
         this.ttlSeconds = ttlSeconds;
     }
 
     public String presignedPut(String objectKey) throws Exception {
-        return presignMinio.getPresignedObjectUrl(
+        return minio.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.PUT)
                         .bucket(bucket)
@@ -36,7 +35,7 @@ public class PresignService {
     }
 
     public String presignedGet(String objectKey) throws Exception {
-        return presignMinio.getPresignedObjectUrl(
+        return minio.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.GET)
                         .bucket(bucket)
@@ -48,7 +47,7 @@ public class PresignService {
     public Map<String, Object> mkUploadDescriptor(String objectKey) throws Exception {
         Map<String, Object> m = new HashMap<>();
         m.put("objectKey", objectKey);
-        m.put("putUrl", presignedPut(objectKey));
+        m.put("putUrl", presignedPut(objectKey));     // will be http://minio:9000/...
         m.put("getUrlPreview", presignedGet(objectKey));
         m.put("expiresInSeconds", ttlSeconds);
         return m;
