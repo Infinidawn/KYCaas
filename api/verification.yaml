@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info: { title: Verification API, version: 0.1.0 }
+servers: [{ url: http://localhost:8002 }]
+paths:
+  /api/v1/verify/basic:
+    post:
+      summary: Submit minimal info for synchronous verification
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/BasicVerificationRequest' } } }
+      responses:
+        "201": { description: created, content: { application/json: { schema: { $ref: '#/components/schemas/VerificationResponse' } } } }
+  /api/v1/verifications/{id}:
+    get:
+      summary: Get verification by id
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/VerificationResponse' } } } }
+components:
+  schemas:
+    BasicVerificationRequest:
+      type: object
+      required: [channel, idType, idNumber, firstName, lastName, dob]
+      properties:
+        channel: { type: string, enum: [public, agent, api] }
+        idType: { type: string, enum: [OMANG, PASSPORT, DRIVERS_LICENSE] }
+        idNumber: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        dob: { type: string, format: date }
+        docFrontUrl: { type: string }
+        selfieUrl: { type: string }
+    VerificationResponse:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [PENDING, AUTO_APPROVED, REVIEW, AUTO_REJECTED] }
+        reasons: { type: array, items: { type: string } }
+        createdAt: { type: string, format: date-time }
+        person:
+          type: object
+          properties:
+            idType: { type: string }
+            idNumber: { type: string }
+            firstName: { type: string }
+            lastName: { type: string }
+            dob: { type: string, format: date }
+        media:
+          type: object
+          properties:
+            docFrontUrl: { type: string }
+            selfieUrl: { type: string }

@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info: { title: Onboarding API, version: 0.1.0 }
+servers: [{ url: http://localhost:8001 }]
+paths:
+  /public/v1/sessions:
+    post:
+      summary: Start session
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/StartSessionRequest' } } }
+      responses:
+        "201": { description: created, content: { application/json: { schema: { $ref: '#/components/schemas/StartSessionResponse' } } } }
+  /public/v1/sessions/{id}/decision:
+    get:
+      summary: Get decision for a session
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Decision' } } } }
+components:
+  schemas:
+    StartSessionRequest:
+      type: object
+      required: [channel, phone]
+      properties:
+        channel: { type: string, enum: [public, agent, api] }
+        phone: { type: string }
+    StartSessionResponse:
+      type: object
+      properties:
+        sessionId: { type: string }
+    Decision:
+      type: object
+      properties:
+        sessionId: { type: string }
+        status: { type: string, enum: [PENDING, AUTO_APPROVED, AUTO_REJECTED, REVIEW] }
+        reasons: { type: array, items: { type: string } }

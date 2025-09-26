@@ -1,0 +1,38 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: document-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/kyc}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+
+app:
+  ocr:
+    exchange: ${OCR_EXCHANGE:x.ocr}
+    routingKey: ${OCR_ROUTING_KEY:ocr.request}
+  storage:
+    defaultBucket: ${DEFAULT_BUCKET:kyc-objects}
+
+logging:
+  level:
+    org.hibernate.SQL: warn
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
