@@ -1,22 +1,33 @@
 package bw.co.btc.kyc.biometrics.api;
-import bw.co.btc.kyc.biometrics.domain.BiometricResult;
-import bw.co.btc.kyc.biometrics.repo.BiometricRepo;
-import org.springframework.http.ResponseEntity; import org.springframework.web.bind.annotation.*;
-import java.util.Map; import java.util.UUID; import java.time.Instant;
-@RestController @RequestMapping("/public/v1")
+
+import bw.co.btc.kyc.biometrics.service.BiometricIntakeService;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
+import bw.co.btc.kyc.biometrics.dto.BiometricIntakeRequest;
+import bw.co.btc.kyc.biometrics.dto.BiometricIntakeResponse;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping(value = "/public/v1/sessions", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BiometricsController {
-  private final BiometricRepo repo; public BiometricsController(BiometricRepo repo){ this.repo=repo; }
-  static record SelfieReq(String selfieImageUrl,String livenessVideoUrl){}
-  @PostMapping("/sessions/{id}/selfie")
-  public ResponseEntity<?> intake(@PathVariable("id") UUID sessionId, @RequestBody SelfieReq r){
-    BiometricResult br = BiometricResult.builder()
-            .id(UUID.randomUUID())
-            .tenantId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
-            .sessionId(sessionId)
-            .selfieImageUrl(r.selfieImageUrl())
-            .createdAt(Instant.now())
-            .build();
-    repo.save(br);
-    return ResponseEntity.accepted().body(Map.of("accepted", true, "correlationId", br.getId().toString()));
+
+  private final BiometricIntakeService service;
+
+  public BiometricsController(BiometricIntakeService service) {
+    this.service = service;
+  }
+
+  @PostMapping("/{sessionId}/biometrics")
+  public BiometricIntakeResponse submitBiometric(
+          @PathVariable UUID sessionId,
+          @RequestHeader(value = "X-Tenant-Id", required = false) String tenantId,
+          @Valid @RequestBody BiometricIntakeRequest req) {
+
+    UUID corr = service.process(sessionId,
+            tenantId == null || tenantId.isBlank() ? "demo-tenant" : tenantId,
+            req);
+
+    return new BiometricIntakeResponse(true, corr);
   }
 }

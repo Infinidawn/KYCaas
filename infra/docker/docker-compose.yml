@@ -50,9 +50,13 @@ services:
       MINIO_SECRET_KEY: minioadmin123
       MINIO_BUCKET: kyc-objects
       MINIO_PRESIGN_TTL: 300
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
 
     ports: [ "8001:8080" ]
-    depends_on: [ postgres, minio, minio-proxy ]
+    depends_on: [ postgres, minio, minio-proxy, rabbitmq ]
 
   verification-service:
     build: ../../services/verification-service
@@ -69,12 +73,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kyc
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASS: guest
-      OCR_EXCHANGE: x.ocr
-      OCR_ROUTING_KEY: ocr.request
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     ports: [ "8003:8080" ]
     depends_on: [ postgres,rabbitmq ]
 
@@ -84,12 +86,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kyc
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASS: guest
-      LIVENESS_EXCHANGE: x.liveness
-      LIVENESS_ROUTING_KEY: liveness.request
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     ports: [ "8004:8080" ]
     depends_on: [ postgres,rabbitmq ]
 
@@ -99,10 +99,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kyc
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASS: guest
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     ports: [ "8005:8080" ]
     depends_on: [ postgres, rabbitmq ]
 

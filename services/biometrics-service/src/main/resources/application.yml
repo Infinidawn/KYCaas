@@ -14,6 +14,12 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
 logging:
   level:
     org.hibernate.SQL: warn
@@ -22,3 +28,11 @@ management:
     web:
       exposure:
         include: health,info
+
+app:
+  biometric:
+    exchange: ${BIOMETRIC_EXCHANGE:x.biometric}
+    rk:
+      metadataSaved: ${BIOMETRIC_RK_METADATA_SAVED:biometric.metadata.saved}
+      completed:     ${BIOMETRIC_RK_COMPLETED:biometric.completed}
+  defaultTenantId: ${DEFAULT_TENANT_ID:11111111-1111-1111-1111-111111111111}

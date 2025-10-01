@@ -1,0 +1,116 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd">
+
+    <!-- risk_engine schema -->
+    <changeSet id="risk-0001-schema" author="bot">
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS risk_engine;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2025-09-29-kyc-decision" author="btc-kyc">
+        <comment>Create risk_engine.kyc_decision with UUID PK</comment>
+
+        <createTable tableName="kyc_decision" schemaName="risk_engine">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" primaryKeyName="pk_kyc_decision"/>
+            </column>
+
+            <column name="session_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- OCR slice -->
+            <column name="ocr_status" type="VARCHAR(16)"/>
+            <column name="ocr_score" type="double precision"/>
+
+            <!-- Biometric slice (future) -->
+            <column name="biometric_status" type="VARCHAR(16)"/>
+            <column name="biometric_score" type="double precision"/>
+
+            <!-- Aggregated -->
+            <column name="overall_status" type="VARCHAR(16)"/>
+            <column name="reasons_json" type="TEXT"/>
+
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+                schemaName="risk_engine"
+                tableName="kyc_decision"
+                columnNames="session_id"
+                constraintName="uq_kyc_decision_session"/>
+    </changeSet>
+
+
+
+
+
+    <!-- Make sure pgcrypto exists so gen_random_uuid() works -->
+    <changeSet id="2025-09-29-enable-pgcrypto" author="btc-kyc">
+        <sql>CREATE EXTENSION IF NOT EXISTS "pgcrypto";</sql>
+    </changeSet>
+
+    <changeSet id="2025-09-29-verification-signal" author="btc-kyc">
+        <comment>Create risk_engine.verification_signal table with UUID PK</comment>
+
+        <createTable tableName="verification_signal" schemaName="risk_engine">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" primaryKeyName="pk_verification_signal"/>
+            </column>
+
+            <column name="session_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="source" type="VARCHAR(24)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="score" type="double precision"/>
+
+            <column name="payload_json" type="TEXT"/>
+
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+                schemaName="risk_engine"
+                tableName="verification_signal"
+                columnNames="session_id, source"
+                constraintName="uq_verification_signal_session_source"/>
+
+        <createIndex schemaName="risk_engine" tableName="verification_signal" indexName="ix_verification_signal_session">
+            <column name="session_id"/>
+        </createIndex>
+
+        <createIndex schemaName="risk_engine" tableName="verification_signal" indexName="ix_verification_signal_tenant">
+            <column name="tenant_id"/>
+        </createIndex>
+
+        <createIndex schemaName="risk_engine" tableName="verification_signal" indexName="ix_verification_signal_source">
+            <column name="source"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -14,6 +14,15 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase/master.xml
+    clear-checksums: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
 logging:
   level:
     org.hibernate.SQL: warn
@@ -22,3 +31,15 @@ management:
     web:
       exposure:
         include: health,info
+
+
+app:
+  exchanges:
+    document: ${DOCUMENT_EXCHANGE:x.document}
+    risk: ${RISK_EXCHANGE:x.risk}
+  rk:
+    decisionUpdated: ${RISK_RK_DECISION_UPDATED:decision.updated}
+  queues:
+    risk:
+      ocrCompleted: ${Q_RISK_DOCUMENT_OCR_COMPLETED:q.risk.document.ocr.completed}
+      biometricCompleted: ${Q_RISK_BIOMETRIC_COMPLETED:q.risk.biometric.completed}

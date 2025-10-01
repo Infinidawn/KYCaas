@@ -1,0 +1,62 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+      http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd">
+
+    <!-- Ensure onboarding schema exists -->
+    <changeSet id="2025-10-01-onboarding-schema" author="btc-kyc">
+        <sql>CREATE SCHEMA IF NOT EXISTS onboarding;</sql>
+    </changeSet>
+
+    <!-- biometric_result table -->
+    <changeSet id="2025-10-01-biometric-result" author="btc-kyc">
+        <comment>Create onboarding.biometric_result for biometric service outputs</comment>
+
+        <createTable tableName="biometric_result" schemaName="onboarding">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" primaryKeyName="pk_biometric_result"/>
+            </column>
+
+            <column name="session_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="selfie_url" type="TEXT"/>
+            <column name="video_url" type="TEXT"/>
+
+            <!-- Face match -->
+            <column name="match_status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="match_score" type="double precision"/>
+
+            <!-- Liveness -->
+            <column name="liveness_passed" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="liveness_score" type="double precision"/>
+
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="biometric_result" schemaName="onboarding" indexName="ix_biometric_session">
+            <column name="session_id"/>
+        </createIndex>
+        <createIndex tableName="biometric_result" schemaName="onboarding" indexName="ix_biometric_tenant">
+            <column name="tenant_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- enable pgcrypto so gen_random_uuid() works -->
+    <changeSet id="2025-10-01-enable-pgcrypto" author="btc-kyc">
+        <sql>CREATE EXTENSION IF NOT EXISTS "pgcrypto";</sql>
+    </changeSet>
+
+</databaseChangeLog>

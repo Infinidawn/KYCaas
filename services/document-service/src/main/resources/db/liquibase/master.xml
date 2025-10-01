@@ -1,0 +1,85 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd">
+
+    <!-- document schema -->
+    <changeSet id="doc-0001-schema" author="bot">
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS document;
+        </sql>
+    </changeSet>
+
+    <!-- document.document_submission -->
+    <changeSet id="doc-0002-submission" author="bot">
+        <createTable schemaName="document" tableName="document_submission">
+            <column name="id"                  type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="tenant_id"           type="UUID"/>
+            <column name="session_id"          type="UUID"><constraints nullable="false"/></column>
+            <column name="id_type"             type="VARCHAR(30)"><constraints nullable="false"/></column>
+            <column name="provided_id_number"  type="VARCHAR(120)"/>
+            <column name="bucket"              type="VARCHAR(255)"/>
+            <column name="front_object_key"    type="VARCHAR(1024)"/>
+            <column name="back_object_key"     type="VARCHAR(1024)"/>
+            <column name="front_image_url"     type="TEXT"/>
+            <column name="back_image_url"      type="TEXT"/>
+            <column name="received_at"         type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex indexName="idx_doc_sub_session" schemaName="document" tableName="document_submission">
+            <column name="session_id"/>
+        </createIndex>
+        <createIndex indexName="idx_doc_sub_tenant" schemaName="document" tableName="document_submission">
+            <column name="tenant_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- document.document_result (FULL with OCR/MRZ fields) -->
+    <changeSet id="doc-0003-result" author="bot">
+        <createTable schemaName="document" tableName="document_result">
+            <column name="id"               type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="tenant_id"        type="UUID"><constraints nullable="false"/></column>
+            <column name="session_id"       type="UUID"><constraints nullable="false"/></column>
+
+            <!-- intake basics -->
+            <column name="id_type"          type="VARCHAR(30)"/>
+            <column name="id_number"        type="VARCHAR(60)"/>
+            <column name="front_image_url"  type="TEXT"/>
+            <column name="back_image_url"   type="TEXT"/>
+
+            <!-- OCR/MRZ enrichment -->
+            <column name="ocr_id_number"    type="VARCHAR(120)"/>
+            <column name="surname"          type="VARCHAR(180)"/>
+            <column name="given_names"      type="VARCHAR(240)"/>
+            <column name="full_name"        type="VARCHAR(360)"/>
+            <column name="date_of_birth"    type="VARCHAR(20)"/>
+            <column name="sex"              type="VARCHAR(10)"/>
+            <column name="nationality"      type="VARCHAR(10)"/>
+            <column name="document_number"  type="VARCHAR(64)"/>
+            <column name="date_of_issue"    type="VARCHAR(20)"/>
+            <column name="date_of_expiry"   type="VARCHAR(20)"/>
+            <column name="mrz_present"      type="BOOLEAN"/>
+            <column name="mrz_valid"        type="BOOLEAN"/>
+            <column name="mrz_line1"        type="TEXT"/>
+            <column name="mrz_line2"        type="TEXT"/>
+            <column name="quality_score"    type="DOUBLE PRECISION"/>
+            <column name="status"           type="VARCHAR(20)"/>
+            <column name="reasons"          type="TEXT"/>
+
+            <column name="created_at"       type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_doc_res_session" schemaName="document" tableName="document_result">
+            <column name="session_id"/>
+        </createIndex>
+        <createIndex indexName="idx_doc_res_tenant"  schemaName="document" tableName="document_result">
+            <column name="tenant_id"/>
+        </createIndex>
+    </changeSet>
+
+
+</databaseChangeLog>

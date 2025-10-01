@@ -14,6 +14,10 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase/master.xml
+    clear-checksums: true
   rabbitmq:
     host: ${RABBITMQ_HOST:rabbitmq}
     port: ${RABBITMQ_PORT:5672}
@@ -21,9 +25,11 @@ spring:
     password: ${RABBITMQ_PASS:guest}
 
 app:
-  ocr:
-    exchange: ${OCR_EXCHANGE:x.ocr}
-    routingKey: ${OCR_ROUTING_KEY:ocr.request}
+  document:
+    exchange: ${DOCUMENT_EXCHANGE:x.document}
+    rk:
+      metadataSaved: ${DOCUMENT_RK_METADATA_SAVED:document.metadata.saved}
+      ocrCompleted:  ${DOCUMENT_RK_OCR_COMPLETED:document.ocr.completed}
   storage:
     defaultBucket: ${DEFAULT_BUCKET:kyc-objects}
 

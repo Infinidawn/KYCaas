@@ -14,9 +14,17 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase/master.xml
+    clear-checksums: true
 logging:
   level:
     org.hibernate.SQL: warn
+    liquibase: info
+    bw.co.btc.kyc.onboarding: DEBUG
+    org.springframework.amqp: INFO
+
 management:
   endpoints:
     web:
@@ -29,3 +37,14 @@ minio:
   secretKey: ${MINIO_SECRET_KEY:minioadmin123}
   bucket: ${MINIO_BUCKET:kyc-objects}
   presignTtlSeconds: ${MINIO_PRESIGN_TTL:300}
+
+
+app:
+  queues:
+    document:
+      metadataSaved: ${Q_ONBOARDING_DOCUMENT_METADATA_SAVED:q.onboarding.document.metadata.saved}
+      ocrCompleted:  ${Q_ONBOARDING_DOCUMENT_OCR_COMPLETED:q.onboarding.document.ocr.completed}
+    risk:
+      decisionUpdated: ${Q_ONBOARDING_RISK_DECISION_UPDATED:q.onboarding.risk.decision.updated}
+    onboarding:
+      biometricCompleted: ${Q_ONBOARDING_BIOMETRIC_COMPLETED:q.onboarding.biometric.completed}
