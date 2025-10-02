@@ -127,4 +127,70 @@
         </rollback>
     </changeSet>
 
+
+    <changeSet id="2025-10-02-tenant-schema" author="btc-kyc">
+        <comment>Create tenant and tenant_api_key tables</comment>
+
+        <!-- Tenant table -->
+        <createTable tableName="tenant" schemaName="onboarding">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" primaryKeyName="pk_tenant"/>
+            </column>
+
+            <column name="name" type="VARCHAR(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_tenant_name"/>
+            </column>
+
+            <column name="admin_email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="contact_phone" type="VARCHAR(64)"/>
+
+            <column name="status" type="VARCHAR(32)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Tenant API Key table -->
+        <createTable tableName="tenant_api_key" schemaName="onboarding">
+            <column name="id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints primaryKey="true" primaryKeyName="pk_tenant_api_key"/>
+            </column>
+
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_tenant_api_key_tenant"
+                             references="onboarding.tenant(id)"/>
+            </column>
+
+            <column name="key_id" type="UUID" defaultValueComputed="gen_random_uuid()">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_tenant_api_key_keyid"/>
+            </column>
+
+            <column name="secret_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="revoked_at" type="TIMESTAMPTZ"/>
+        </createTable>
+
+        <!-- Indexes -->
+        <createIndex schemaName="onboarding" tableName="tenant_api_key"
+                     indexName="ix_tenant_api_key_tenant">
+            <column name="tenant_id"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

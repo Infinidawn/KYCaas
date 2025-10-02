@@ -7,6 +7,7 @@ import bw.co.btc.kyc.onboarding.enumeration.KycSessionState;
 import bw.co.btc.kyc.onboarding.repo.KycDecisionRepository;
 import bw.co.btc.kyc.onboarding.repo.KycSessionRepo;
 import bw.co.btc.kyc.onboarding.repo.KycStageLogRepository;
+import bw.co.btc.kyc.onboarding.security.TenantContext;
 import bw.co.btc.kyc.onboarding.storage.PresignService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -44,16 +45,22 @@ public class PublicController {
   @PostMapping("/sessions")
   public ResponseEntity<StartSessionResponse> start(@Valid @RequestBody StartSessionRequest r) {
     UUID id = UUID.randomUUID();
+
+    UUID tenantId = TenantContext.getTenantId();
+    if (tenantId == null) {
+      throw new IllegalStateException("No tenant resolved from API key");
+    }
+
     var s = KycSession.builder()
             .id(id)
-            .tenantId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+            .tenantId(tenantId)
             .channel(r.channel().name())
             .phone(r.phone())
             .state(KycSessionState.PENDING.name())
             .createdAt(Instant.now())
             .build();
     sessions.save(s);
-    // 👇 Add stage log entry right after saving session
+
     stageLogs.save(new KycStageLog(
             UUID.randomUUID(),
             s.getId(),
@@ -69,13 +76,14 @@ public class PublicController {
 
   // -------------------- 2) Issue Upload URLs --------------------
   @PostMapping("/sessions/{sessionId}/upload-urls")
-  public UploadUrlsResponse createUploadUrls(@PathVariable UUID sessionId,
-                                             @RequestHeader(value = "X-Tenant-Id", required = false) String tenantIdHeader)
-          throws Exception {
+  public UploadUrlsResponse createUploadUrls(@PathVariable UUID sessionId) throws Exception {
 
-    final String tenantId = (tenantIdHeader == null || tenantIdHeader.isBlank())
-            ? "demo-tenant" : tenantIdHeader;
+    UUID tenantId = TenantContext.getTenantId();
+    if (tenantId == null) {
+      throw new IllegalStateException("No tenant resolved from API key");
+    }
 
+    // Use tenant UUID as folder prefix
     final String prefix = "%s/sessions/%s/".formatted(tenantId, sessionId);
 
     Map<String, UploadUrlsResponse.UploadItem> items = new HashMap<>();
@@ -87,6 +95,7 @@ public class PublicController {
     sessions.findById(sessionId).ifPresent(s -> {
       s.setState(KycSessionState.MEDIA_ISSUED.name());
       sessions.save(s);
+
       stageLogs.save(new KycStageLog(
               UUID.randomUUID(), s.getId(), "MEDIA_ISSUED",
               "issued=" + String.join(",", items.keySet()),

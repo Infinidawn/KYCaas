@@ -47,4 +47,5 @@ app:
     risk:
       decisionUpdated: ${Q_ONBOARDING_RISK_DECISION_UPDATED:q.onboarding.risk.decision.updated}
     onboarding:
+      biometricMetadataSaved: ${Q_ONBOARDING_BIOMETRIC_METADATA_SAVED:q.onboarding.biometric.metadata.saved}
       biometricCompleted: ${Q_ONBOARDING_BIOMETRIC_COMPLETED:q.onboarding.biometric.completed}

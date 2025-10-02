@@ -39,14 +39,26 @@ public class RabbitConfig {
     }
 
     // ========== biometric-service ==========
+    @Bean TopicExchange biometricExchange() {
+        return ExchangeBuilder.topicExchange("x.biometric").durable(true).build();
+    }
+
+    @Bean Queue qBiometricMetadataSaved() {
+        return QueueBuilder.durable("q.onboarding.biometric.metadata.saved").build();
+    }
+
+    @Bean Binding bBiometricMetadataSaved(TopicExchange biometricExchange) {
+        return BindingBuilder.bind(qBiometricMetadataSaved()).to(biometricExchange).with("biometric.metadata.saved");
+    }
 
     @Bean Queue qBiometricCompleted() {
         return QueueBuilder.durable("q.onboarding.biometric.completed").build();
     }
+
     @Bean Binding bBiometricCompleted(TopicExchange biometricExchange) {
         return BindingBuilder.bind(qBiometricCompleted()).to(biometricExchange).with("biometric.completed");
     }
-    @Bean TopicExchange biometricExchange() { return ExchangeBuilder.topicExchange("x.biometric").durable(true).build(); }
+
 
     // ========== risk-engine ==========
     @Bean TopicExchange riskExchange() {

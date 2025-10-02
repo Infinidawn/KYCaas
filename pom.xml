@@ -12,5 +12,6 @@
     <module>services/document-service</module>
     <module>services/biometrics-service</module>
     <module>services/risk-engine</module>
+    <module>services/gateway-service</module>
   </modules>
 </project>

@@ -7,6 +7,7 @@ public enum KycSessionState {
     MEDIA_UPLOADED,
     DOCS_SUBMITTED,
     OCR_COMPLETED,
+    BIOMETRIC_SUBMITTED,
     BIOMETRIC_COMPLETED,
     DECIDED
 }
