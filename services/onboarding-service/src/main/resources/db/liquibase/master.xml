@@ -193,4 +193,8 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="2025-09-30-enable-pgcrypto" author="btc-kyc" context="init">
+        <sql>CREATE EXTENSION IF NOT EXISTS pgcrypto;</sql>
+    </changeSet>
+
 </databaseChangeLog>

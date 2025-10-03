@@ -40,6 +40,7 @@ public class TenantFilter extends OncePerRequestFilter {
         final String path = request.getRequestURI();
         if (path.startsWith("/actuator")) return true;
         if (path.startsWith("/admin/v1/tenants")) return true;
+        if (path.startsWith("/internal/tenants/resolve")) return true;
         return false;
     }
 

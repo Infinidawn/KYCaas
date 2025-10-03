@@ -19,12 +19,11 @@ public class DocumentController {
    * X-Tenant-Id header optional in dev; in prod should be injected by gateway.
    */
   @PostMapping("/{sessionId}/documents")
-  public DocumentIntakeResponse processDocuments(@PathVariable("sessionId") UUID sessionId,
-                                       @RequestHeader(value="X-Tenant-Id", required=false) String tenantId,
-                                       @Valid @RequestBody DocumentIntakeRequest body) {
-
-    UUID corr = service.processDocuments(sessionId, (tenantId==null || tenantId.isBlank() ? "demo-tenant" : tenantId), body);
-
+  public DocumentIntakeResponse processDocuments(@PathVariable UUID sessionId,
+                                                 @RequestHeader("X-Tenant-Id") UUID tenantId,
+                                                 @Valid @RequestBody DocumentIntakeRequest body,
+                                                 @RequestHeader(value = "X-Correlation-Id", required = false) String corrId) {
+    UUID corr = service.processDocuments(sessionId, tenantId, body, corrId);
     return new DocumentIntakeResponse(true, corr);
   }
 }

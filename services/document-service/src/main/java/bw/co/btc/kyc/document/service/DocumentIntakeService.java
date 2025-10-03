@@ -37,25 +37,46 @@ public class DocumentIntakeService {
     /**
      * Orchestrates: normalize addressing → persist submission → emit metadata.saved →
      * delegate OCR → persist DocumentResult → emit ocr.completed.
+     *
+     * @param sessionId     KYC session
+     * @param tenantId      REQUIRED; injected by gateway as X-Tenant-Id
+     * @param req           payload
+     * @param correlationId OPTIONAL; pass X-Correlation-Id from gateway if present
+     * @return correlation id (we use sessionId here, but could be a new UUID if preferred)
      */
-    public UUID processDocuments(UUID sessionId, String tenantIdStr, DocumentIntakeRequest req) {
-        var keys = resolveKeys(req);
-        UUID tenantId = safeUuidOrNull(tenantIdStr);
+    public UUID processDocuments(UUID sessionId, UUID tenantId, DocumentIntakeRequest req, String correlationId) {
+        if (tenantId == null) {
+            throw new IllegalArgumentException("Missing tenantId");
+        }
+        if (sessionId == null) {
+            throw new IllegalArgumentException("Missing sessionId");
+        }
 
+        final String corr = correlationId != null && !correlationId.isBlank() ? correlationId : sessionId.toString();
+        final Keys keys = resolveKeys(req);
+
+        // 1) Persist submission
         persistSubmission(sessionId, tenantId, req, keys);
-        emitMetadataSaved(sessionId, tenantId, keys);
 
+        // 2) Emit metadata.saved (to kick any downstream consumers)
+        emitMetadataSaved(sessionId, tenantId, keys, corr);
+
+        // 3) Run (simulated) OCR
         OcrResult ocr = ocrSimulator.run(
                 sessionId, tenantId, req,
                 keys.bucket(), keys.frontKey(), keys.backKey()
         );
 
+        // 4) Persist OCR result
         persistOcrResult(ocr);
-        emitOcrCompleted(ocr);
 
-        log.info("[Document] ocr.completed → sessionId={} status={} quality={}",
-                sessionId, mapToCompletedStatus(ocr.getVerdict()), ocr.getQualityScore());
+        // 5) Emit ocr.completed for risk-engine
+        emitOcrCompleted(ocr, corr);
 
+        log.info("[Document][corr={}] ocr.completed → sessionId={} status={} quality={}",
+                corr, sessionId, mapToCompletedStatus(ocr.getVerdict()), ocr.getQualityScore());
+
+        // we return a UUID correlation; using sessionId keeps it simple/traceable
         return sessionId;
     }
 
@@ -68,13 +89,13 @@ public class DocumentIntakeService {
 
         if ((bucket == null || frontKey == null) && req.frontImageUrl() != null) {
             Parsed p = parseUrl(req.frontImageUrl());
-            if (bucket == null) bucket = p.bucket;
-            if (frontKey == null) frontKey = p.key;
+            if (bucket == null) bucket = p.bucket();
+            if (frontKey == null) frontKey = p.key();
         }
         if ((bucket == null || backKey == null) && req.backImageUrl() != null) {
             Parsed p = parseUrl(req.backImageUrl());
-            if (bucket == null) bucket = p.bucket;
-            if (backKey == null) backKey = p.key;
+            if (bucket == null) bucket = p.bucket();
+            if (backKey == null) backKey = p.key();
         }
 
         if (bucket == null) bucket = defaultBucket;
@@ -95,17 +116,19 @@ public class DocumentIntakeService {
                 .backObjectKey(keys.backKey())
                 .frontImageUrl(req.frontImageUrl())
                 .backImageUrl(req.backImageUrl())
+                .receivedAt(Instant.now())
                 .build();
         submissionRepo.save(submission);
     }
 
-    private void emitMetadataSaved(UUID sessionId, UUID tenantId, Keys keys) {
+    private void emitMetadataSaved(UUID sessionId, UUID tenantId, Keys keys, String corr) {
         Map<String, String> objects = new HashMap<>();
         objects.put("documentFront", keys.frontKey());
         if (keys.backKey() != null) objects.put("documentBack", keys.backKey());
 
+        // If your producer supports correlation id headers, pass it there too.
         events.emitMetadataSaved(new DocumentMetadataSaved(sessionId, tenantId, objects));
-        log.info("[Document] metadata.saved → sessionId={} objects={}", sessionId, objects.keySet());
+        log.info("[Document][corr={}] metadata.saved → sessionId={} objects={}", corr, sessionId, objects.keySet());
     }
 
     private void persistOcrResult(OcrResult ocr) {
@@ -138,8 +161,8 @@ public class DocumentIntakeService {
         resultRepo.save(row);
     }
 
-    private void emitOcrCompleted(OcrResult ocr) {
-        // Contract for risk-engine: SUCCESS | FAILED (we collapse REVIEW→FAILED for now)
+    private void emitOcrCompleted(OcrResult ocr, String corr) {
+        // Contract for risk-engine: SUCCESS | FAILED (collapse REVIEW→FAILED for now)
         String completedStatus = mapToCompletedStatus(ocr.getVerdict());
 
         var evt = new OcrCompletedEvent(
@@ -149,12 +172,14 @@ public class DocumentIntakeService {
                 ocr.getQualityScore(),
                 ocr.getMessage()
         );
+        // If your producer can attach headers, include corr
         events.emitOcrCompleted(evt);
+        log.info("[Document][corr={}] emitted ocr.completed → sessionId={} status={}", corr, ocr.getSessionId(), completedStatus);
     }
 
     private String mapToCompletedStatus(String verdict) {
         if ("PASS".equalsIgnoreCase(verdict)) return "SUCCESS";
-        return "FAILED"; // includes FAIL and REVIEW (tweak later if you add "REVIEW" as a distinct downstream status)
+        return "FAILED"; // includes FAIL and REVIEW
     }
 
     // ---------------- small records / utils ----------------
@@ -167,10 +192,6 @@ public class DocumentIntakeService {
         var path = u.getPath().startsWith("/") ? u.getPath().substring(1) : u.getPath();
         var parts = path.split("/", 2);
         return new Parsed(parts.length > 0 ? parts[0] : null, parts.length > 1 ? parts[1] : null);
-    }
-
-    private static UUID safeUuidOrNull(String v) {
-        try { return v == null ? null : UUID.fromString(v); } catch (Exception e) { return null; }
     }
 
     private static boolean blank(String s) { return s == null || s.isBlank(); }

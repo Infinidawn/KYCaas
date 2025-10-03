@@ -18,8 +18,10 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin123
     volumes:
       - minio_data:/data
+    # Only the console is exposed directly (9001). Public S3 goes via nginx proxy below.
     ports:
-      - "9001:9001"   # Web console
+      - "9001:9001"
+
   minio-proxy:
     image: nginx:1.27-alpine
     depends_on: [ minio ]
@@ -37,24 +39,27 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
-  # Thin-slice services
+  # -------------------------
+  # Application microservices
+  # -------------------------
   onboarding-service:
     build: ../../services/onboarding-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kyc
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+
+      MINIO_ENDPOINT: http://minio:9000              # internal to compose
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000   # what presigned URLs should point to
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
       MINIO_BUCKET: kyc-objects
       MINIO_PRESIGN_TTL: 300
+
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-
     ports: [ "8001:8080" ]
     depends_on: [ postgres, minio, minio-proxy, rabbitmq ]
 
@@ -78,7 +83,7 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
     ports: [ "8003:8080" ]
-    depends_on: [ postgres,rabbitmq ]
+    depends_on: [ postgres, rabbitmq ]
 
   biometrics-service:
     build: ../../services/biometrics-service
@@ -91,7 +96,7 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
     ports: [ "8004:8080" ]
-    depends_on: [ postgres,rabbitmq ]
+    depends_on: [ postgres, rabbitmq ]
 
   risk-engine:
     build: ../../services/risk-engine
@@ -105,6 +110,32 @@ services:
       SPRING_RABBITMQ_PASSWORD: guest
     ports: [ "8005:8080" ]
     depends_on: [ postgres, rabbitmq ]
+
+  # -------------------------
+  # API Gateway
+  # -------------------------
+  gateway-service:
+    build: ../../services/gateway-service
+    environment:
+      # Point gateway routes at internal service names (compose DNS)
+      ONBOARDING_URL: http://onboarding-service:8080
+      DOCUMENT_URL: http://document-service:8080
+      BIOMETRIC_URL: http://biometrics-service:8080
+      RISK_URL: http://risk-engine:8080
+
+      # Tenant resolver fallback (matches @Value default, but explicit is clearer)
+      TENANT_RESOLVE_URL: http://onboarding-service:8080/internal/tenants/resolve
+
+      # Optional: increase Netty header size if needed
+      # SPRING_CODEC_MAX_IN_MEMORY_SIZE: 10MB
+    ports:
+      - "8000:8080"   # Gateway external port
+    depends_on:
+      - onboarding-service
+      - document-service
+      - biometrics-service
+      - risk-engine
+      - rabbitmq
 
 volumes:
   pgdata:

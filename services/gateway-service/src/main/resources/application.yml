@@ -1,0 +1,78 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: kyc-gateway
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      default-filters:
+        # Adds request/response ids to logs
+        - name: DedupeResponseHeader
+          args:
+            name: Access-Control-Expose-Headers
+            strategy: RETAIN_FIRST
+      routes:
+        - id: onboarding
+          uri: ${ONBOARDING_URL:http://onboarding:8080}
+          predicates:
+            - Path=/api/onboarding/**
+          filters:
+            - StripPrefix=1 # removes /api
+            - name: LoggingFilter
+            - name: ApiKeyFilter
+              args:
+                whitelist:
+                  - /onboarding/tenant/create
+                  - /onboarding/health
+            - name: TenantResolverFilter
+
+        - id: documents
+          uri: ${DOCUMENT_URL:http://document:8080}
+          predicates:
+            - Path=/api/documents/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: ApiKeyFilter
+            - name: TenantResolverFilter
+
+        - id: biometric
+          uri: ${BIOMETRIC_URL:http://biometric:8080}
+          predicates:
+            - Path=/api/biometric/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: ApiKeyFilter
+            - name: TenantResolverFilter
+
+        - id: risk
+          uri: ${RISK_URL:http://risk-engine:8080}
+          predicates:
+            - Path=/api/risk/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: ApiKeyFilter
+            - name: TenantResolverFilter
+
+  codec:
+    max-in-memory-size: 10MB
+
+# CORS (adjust for your frontend origin)
+app:
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allowed-headers: "*"
+
+TENANT_RESOLVE_URL: http://localhost:8081/internal/tenants/resolve
+
+logging:
+  level:
+    root: INFO
+    bw.co.btc.kyc.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
