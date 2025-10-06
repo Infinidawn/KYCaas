@@ -14,6 +14,10 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:db/liquibase/master.xml
+    clear-checksums: true
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:rabbitmq}
     port: ${SPRING_RABBITMQ_PORT:5672}

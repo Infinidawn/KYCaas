@@ -6,15 +6,13 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.4</version>
+    <version>3.3.13</version>
     <relativePath/>
   </parent>
 
   <groupId>bw.co.btc.kyc</groupId>
   <artifactId>gateway-service</artifactId>
   <version>0.1.0</version>
-  <name>BTC KYC Gateway</name>
-  <description>API Gateway for BTC KYC platform</description>
 
   <properties>
     <java.version>17</java.version>

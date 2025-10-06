@@ -9,11 +9,18 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
+
     @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain springSecurityFilterChain() {
+        ServerHttpSecurity http = ServerHttpSecurity.http();
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(auth -> auth.anyExchange().permitAll())
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .authorizeExchange(ex -> ex
+                        .pathMatchers("/actuator/**").permitAll()
+                        .anyExchange().permitAll()   // open gateway; your filters handle auth
+                )
                 .build();
     }
 }

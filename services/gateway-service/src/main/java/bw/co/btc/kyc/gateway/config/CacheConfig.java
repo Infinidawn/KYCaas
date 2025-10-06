@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager mgr = new CaffeineCacheManager("tenantByApiKey");
+        CaffeineCacheManager mgr = new CaffeineCacheManager("tenant-resolve");
         mgr.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(15, TimeUnit.MINUTES)
                 .maximumSize(10_000));

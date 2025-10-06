@@ -123,8 +123,6 @@ services:
       BIOMETRIC_URL: http://biometrics-service:8080
       RISK_URL: http://risk-engine:8080
 
-      # Tenant resolver fallback (matches @Value default, but explicit is clearer)
-      TENANT_RESOLVE_URL: http://onboarding-service:8080/internal/tenants/resolve
 
       # Optional: increase Netty header size if needed
       # SPRING_CODEC_MAX_IN_MEMORY_SIZE: 10MB
