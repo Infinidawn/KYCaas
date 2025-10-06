@@ -15,7 +15,7 @@ public class KycDecisionDto {
     Slice biometric;
     String overall;     // PASS | FAIL | REVIEW | null
     String[] reasons;   // may be empty
-    Instant updatedAt;
+    Instant createdAt;
 
     @Value
     @Builder

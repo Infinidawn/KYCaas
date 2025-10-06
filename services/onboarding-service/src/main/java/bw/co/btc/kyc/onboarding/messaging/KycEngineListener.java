@@ -35,6 +35,8 @@ public class KycEngineListener {
         UUID sessionId = dto.getSessionId();
         UUID tenantId = dto.getTenantId();
 
+        log.info("[Onboarding<-RiskEngine] KycDecisionDto received: {}", dto);
+
         sessions.findById(sessionId).ifPresentOrElse(s -> {
             if (!tenantMatches(s, tenantId)) return;
 
